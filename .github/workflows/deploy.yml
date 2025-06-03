@@ -1,19 +1,20 @@
-name: Build and Deploy FastAPI Docker App to Azure
+name: Deploy on Trigger from Private Repo
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-from-private]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clone Private Repo (FastAPI App)
+      - name: Checkout Public Repo
+        uses: actions/checkout@v3
+
+      - name: Clone Private Repo
         run: |
-          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/11vijays/gate-backend.git
+          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/11vijays/gate-backend.git app
           cd app
 
       - name: Azure Login
@@ -21,16 +22,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Docker Hub Login
+      - name: Docker Login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Build and Push Docker Image to Docker Hub
+      - name: Build & Push Docker Image
         run: |
           cd app
           docker build -t vijaydev11/fastapi-app:latest .
           docker push vijaydev11/fastapi-app:latest
 
-      - name: Deploy to Azure Web App (Linux Container)
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: gategroup
