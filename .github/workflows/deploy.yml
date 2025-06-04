@@ -1,6 +1,7 @@
 name: CI/CD Pipeline from Private Repo Trigger
 
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: [trigger-from-private]
 
