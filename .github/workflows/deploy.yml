@@ -5,22 +5,20 @@ on:
     types: [trigger-from-private]
 
 jobs:
-  clone:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Public Repo
-        uses: actions/checkout@v3
-
-      - name: Clone Private Repo
-        run: |
-          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/11vijays/gate-backend.git app
-
   test:
     runs-on: ubuntu-latest
-    needs: clone
 
     steps:
+      - name: Clone Private Repo
+        run: |
+          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/11vijays/gate-backend.git repo
+
+      - name: Show Repo Structure
+        run: |
+          ls -la repo
+          ls -la repo/app
+          ls -la repo/tests
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -28,26 +26,30 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          cd app
+          cd repo
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run Pytest
         run: |
-          cd app
-          pytest
+          cd repo
+          pytest tests
 
   build:
     runs-on: ubuntu-latest
     needs: test
 
     steps:
+      - name: Clone Private Repo
+        run: |
+          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/11vijays/gate-backend.git repo
+
       - name: Docker Login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
       - name: Build & Push Docker Image
         run: |
-          cd app
+          cd repo/app
           docker build -t vijaydev11/fastapi-app:latest .
           docker push vijaydev11/fastapi-app:latest
 
@@ -56,6 +58,10 @@ jobs:
     needs: build
 
     steps:
+      - name: Clone Private Repo
+        run: |
+          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/11vijays/gate-backend.git repo
+
       - name: Azure Login
         uses: azure/login@v1
         with:
